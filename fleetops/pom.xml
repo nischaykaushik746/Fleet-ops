@@ -26,10 +26,6 @@
 
 	<dependencies>
 
-		<!-- ===============================
-             CORE SPRING DEPENDENCIES
-             =============================== -->
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -62,19 +58,11 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- ===============================
-             DATABASE
-             =============================== -->
-
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-
-		<!-- ===============================
-             JWT (REQUIRED FOR PART 4)
-             =============================== -->
 
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -96,18 +84,10 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- ===============================
-             ASYNC / MULTI-THREAD SUPPORT
-             =============================== -->
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
-
-		<!-- ===============================
-             TESTING
-             =============================== -->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
