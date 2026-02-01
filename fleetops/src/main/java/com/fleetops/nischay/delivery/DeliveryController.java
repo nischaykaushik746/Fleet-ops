@@ -1,21 +1,24 @@
 package com.fleetops.nischay.delivery;
 
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/deliveries")
 public class DeliveryController {
 
-    @PostMapping
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public String createDelivery() {
-        return "Delivery created";
+    private final DeliveryRepository deliveryRepository;
+
+    public DeliveryController(DeliveryRepository deliveryRepository) {
+        this.deliveryRepository = deliveryRepository;
     }
 
-    @PutMapping("/{id}/assign")
-    @PreAuthorize("hasRole('OPS_MANAGER')")
-    public String assignDelivery(@PathVariable Long id) {
-        return "Delivery assigned";
+    @GetMapping
+    public Page<Delivery> getDeliveries(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        return deliveryRepository.findAll(pageable);
     }
 }

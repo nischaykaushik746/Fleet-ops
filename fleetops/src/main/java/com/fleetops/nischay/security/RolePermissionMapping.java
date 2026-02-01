@@ -1,7 +1,8 @@
 package com.fleetops.nischay.security;
 
-import com.fleetops.enums.PermissionType;
-import com.fleetops.enums.RoleType;
+import com.fleetops.nischay.enums.PermissionType;
+import com.fleetops.nischay.enums.RoleType;
+
 
 import java.util.EnumMap;
 import java.util.EnumSet;
