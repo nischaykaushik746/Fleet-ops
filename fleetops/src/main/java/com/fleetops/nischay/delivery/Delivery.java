@@ -12,10 +12,11 @@ public class Delivery {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String trackingId;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
     @ManyToOne
@@ -27,6 +28,52 @@ public class Delivery {
     private Hub hub;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private DeliveryStatus status;
 
+    // ✅ REQUIRED GETTERS / SETTERS
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getTrackingId() {
+        return trackingId;
+    }
+
+    public void setTrackingId(String trackingId) {
+        this.trackingId = trackingId;
+    }
+
+    public User getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(User customer) {
+        this.customer = customer;
+    }
+
+    public Driver getDriver() {
+        return driver;
+    }
+
+    public void setDriver(Driver driver) {
+        this.driver = driver;
+    }
+
+    public Hub getHub() {
+        return hub;
+    }
+
+    public void setHub(Hub hub) {
+        this.hub = hub;
+    }
+
+    public DeliveryStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(DeliveryStatus status) {
+        this.status = status;
+    }
 }

@@ -8,7 +8,6 @@ public class NotificationService {
 
     @Async
     public void notifyDeliveryAssigned(Long deliveryId) {
-        // simulate async work (email, SMS, webhook)
         System.out.println("Notifying assignment for delivery: " + deliveryId);
     }
 }
