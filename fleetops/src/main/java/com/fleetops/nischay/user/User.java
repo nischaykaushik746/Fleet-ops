@@ -1,41 +1,48 @@
 package com.fleetops.nischay.user;
 
-import com.fleetops.nischay.enums.AuthProviderType;
-import com.fleetops.nischay.enums.RoleType;
+import com.fleetops.nischay.role.RolePermissionMapping;
+import com.fleetops.nischay.role.RoleType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+@Table(name = "app_user")
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @Column(unique = true, nullable = false)
+    private String username;
 
-    @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AuthProviderType authProvider;
-
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id")
-    )
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Set<RoleType> roles;
+    private Set<RoleType> roles = new HashSet<>();
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+
+        roles.forEach(role -> {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+            authorities.addAll(RolePermissionMapping.getAuthoritiesForRole(role));
+        });
+
+        return authorities;
+    }
 }

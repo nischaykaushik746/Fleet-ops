@@ -1,12 +1,10 @@
 package com.fleetops.nischay.analytics;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
-@AllArgsConstructor
+@Data
 public class DeliveryStatsDto {
-    private long totalDeliveries;
-    private long completedDeliveries;
-    private long failedDeliveries;
+    private long totalTrips;
+    private long completedTrips;
+    private long cancelledTrips;
 }

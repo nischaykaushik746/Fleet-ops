@@ -1,28 +1,24 @@
 package com.fleetops.nischay.exception;
 
+import lombok.Data;
+import org.springframework.http.HttpStatus;
+
 import java.time.LocalDateTime;
 
+@Data
 public class ApiError {
 
-    private String message;
-    private int status;
     private LocalDateTime timestamp;
+    private String message;
+    private HttpStatus status;
 
-    public ApiError(String message, int status) {
-        this.message = message;
-        this.status = status;
+    public ApiError() {
         this.timestamp = LocalDateTime.now();
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
+    public ApiError(String message, HttpStatus status) {
+        this();
+        this.message = message;
+        this.status = status;
     }
 }
