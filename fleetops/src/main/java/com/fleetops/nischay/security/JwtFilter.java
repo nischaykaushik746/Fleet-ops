@@ -2,8 +2,7 @@ package com.fleetops.nischay.security;
 
 import com.fleetops.nischay.repository.UserRepository;
 import com.fleetops.nischay.user.User;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
+import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,7 +26,6 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-
             String header = request.getHeader("Authorization");
 
             if (header == null || !header.startsWith("Bearer ")) {
@@ -38,8 +36,17 @@ public class JwtFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             String username = jwtUtil.extractUsername(token);
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (username == null || jwtUtil.isTokenExpired(token)) {
+                throw new RuntimeException("Invalid token");
+            }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+
                 User user = userRepository.findByUsername(username).orElseThrow();
+
+                if (!jwtUtil.validateToken(token, user.getUsername())) {
+                    throw new RuntimeException("Token validation failed");
+                }
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
@@ -50,10 +57,9 @@ public class JwtFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (Exception ex) {
-
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Invalid or expired token\"}");
+            response.getWriter().write("{\"error\":\"Unauthorized\"}");
         }
     }
 }

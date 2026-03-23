@@ -15,8 +15,12 @@ public class AsyncConfig {
                 20,
                 60,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(100),
-                Executors.defaultThreadFactory(),
+                new ArrayBlockingQueue<>(100),
+                r -> {
+                    Thread t = new Thread(r);
+                    t.setName("trip-worker-" + t.getId());
+                    return t;
+                },
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
     }

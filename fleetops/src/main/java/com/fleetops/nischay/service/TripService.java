@@ -1,6 +1,7 @@
 package com.fleetops.nischay.service;
 
 import com.fleetops.nischay.assignment.AssignmentService;
+import com.fleetops.nischay.audit.AuditService;
 import com.fleetops.nischay.driver.Driver;
 import com.fleetops.nischay.driver.DriverStatus;
 import com.fleetops.nischay.fleet.Vehicle;
@@ -11,6 +12,7 @@ import com.fleetops.nischay.trip.Trip;
 import com.fleetops.nischay.trip.TripStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -21,12 +23,14 @@ import java.util.concurrent.ExecutorService;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TripService {
 
     private final TripRepository tripRepository;
     private final AssignmentService assignmentService;
+    private final AuditService auditService;
 
-    private final @Qualifier("tripExecutor") ExecutorService executorService;
+    private final @Qualifier("tripExecutor") ExecutorService executor;
 
     @Transactional
     public Trip createTrip(String source, String destination) {
@@ -41,12 +45,19 @@ public class TripService {
         trip = tripRepository.save(trip);
 
         Trip finalTrip = trip;
-        executorService.submit(() -> assignDriverAndVehicle(finalTrip));
+
+        executor.submit(() -> {
+            try {
+                assignDriverAndVehicle(finalTrip);
+            } catch (Exception e) {
+                log.error("Trip assignment failed", e);
+            }
+        });
 
         return trip;
     }
 
-    private void assignDriverAndVehicle(Trip trip) {
+    public void assignDriverAndVehicle(Trip trip) {
 
         int retries = 3;
 
@@ -71,6 +82,16 @@ public class TripService {
                         trip.setStatus(TripStatus.ASSIGNED);
 
                         tripRepository.save(trip);
+
+                        assignmentService.invalidateDriverCache();
+
+                        auditService.logAction(
+                                driver.getUser().getUsername(),
+                                "TRIP_ASSIGNED",
+                                "TripId=" + trip.getId()
+                        );
+
+                        log.info("Trip {} assigned successfully", trip.getId());
                         return;
 
                     } finally {
@@ -79,11 +100,14 @@ public class TripService {
                 }
 
             } catch (Exception e) {
-                System.out.println("Retrying assignment...");
+                log.warn("Retrying assignment for trip {}", trip.getId());
             }
         }
 
-        throw new RuntimeException("Assignment failed");
+        trip.setStatus(TripStatus.CANCELLED);
+        tripRepository.save(trip);
+
+        log.error("Trip {} failed after retries", trip.getId());
     }
 
     @PreAuthorize("hasRole('ADMIN') OR #driverId == authentication.principal.id")
