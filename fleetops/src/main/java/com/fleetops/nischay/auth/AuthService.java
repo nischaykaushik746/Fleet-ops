@@ -1,6 +1,6 @@
 package com.fleetops.nischay.auth;
 
-import com.fleetops.nischay.audit.AuditService;
+import com.fleetops.nischay.aop.TrackExecution;
 import com.fleetops.nischay.repository.UserRepository;
 import com.fleetops.nischay.role.RoleType;
 import com.fleetops.nischay.security.JwtUtil;
@@ -18,8 +18,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final AuditService auditService;
 
+    @TrackExecution
     public String signup(String username, String password) {
 
         User user = User.builder()
@@ -30,15 +30,11 @@ public class AuthService {
 
         userRepository.save(user);
 
-        auditService.logAction(username, "SIGNUP", "User registered");
-
         return "User created";
     }
 
+    @TrackExecution
     public String login(User user) {
-
-        auditService.logAction(user.getUsername(), "LOGIN", "User logged in");
-
         return jwtUtil.generateToken(user.getUsername(), user.getId());
     }
 }

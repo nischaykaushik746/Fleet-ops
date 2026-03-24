@@ -1,5 +1,6 @@
 package com.fleetops.nischay.analytics;
 
+import com.fleetops.nischay.aop.TrackExecution;
 import com.fleetops.nischay.repository.TripRepository;
 import com.fleetops.nischay.trip.TripStatus;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +18,11 @@ public class AnalyticsService {
 
     private final @Qualifier("analyticsExecutor") ExecutorService executor;
 
+    @TrackExecution
     public DeliveryStatsDto getDeliveryStats() {
 
         CompletableFuture<Long> total =
-                CompletableFuture.supplyAsync(() -> tripRepository.count(), executor);
+                CompletableFuture.supplyAsync(tripRepository::count, executor);
 
         CompletableFuture<Long> completed =
                 CompletableFuture.supplyAsync(() ->

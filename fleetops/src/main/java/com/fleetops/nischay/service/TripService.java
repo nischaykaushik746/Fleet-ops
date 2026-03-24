@@ -1,11 +1,12 @@
 package com.fleetops.nischay.service;
 
+import com.fleetops.nischay.aop.TrackExecution;
 import com.fleetops.nischay.assignment.AssignmentService;
-import com.fleetops.nischay.audit.AuditService;
 import com.fleetops.nischay.driver.Driver;
 import com.fleetops.nischay.driver.DriverStatus;
 import com.fleetops.nischay.fleet.Vehicle;
 import com.fleetops.nischay.fleet.VehicleStatus;
+import com.fleetops.nischay.locking.DistributedLockManager;
 import com.fleetops.nischay.locking.DriverLockManager;
 import com.fleetops.nischay.repository.TripRepository;
 import com.fleetops.nischay.trip.Trip;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -28,10 +30,11 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final AssignmentService assignmentService;
-    private final AuditService auditService;
+    private final DistributedLockManager lockManager;
 
     private final @Qualifier("tripExecutor") ExecutorService executor;
 
+    @TrackExecution
     @Transactional
     public Trip createTrip(String source, String destination) {
 
@@ -50,13 +53,14 @@ public class TripService {
             try {
                 assignDriverAndVehicle(finalTrip);
             } catch (Exception e) {
-                log.error("Trip assignment failed", e);
+                log.error("Trip assignment failed for tripId={}", finalTrip.getId(), e);
             }
         });
 
         return trip;
     }
 
+    @TrackExecution
     public void assignDriverAndVehicle(Trip trip) {
 
         int retries = 3;
@@ -67,9 +71,12 @@ public class TripService {
                 Driver driver = assignmentService.getAvailableDriver();
                 Vehicle vehicle = assignmentService.getAvailableVehicle();
 
-                var lock = DriverLockManager.getLock(driver.getId());
+                String lockKey = "driver:" + driver.getId();
 
-                if (lock.tryLock()) {
+                String owner = lockManager.acquireLock(lockKey);
+
+                if (owner != null) {
+
                     try {
 
                         if (driver.getStatus() != DriverStatus.AVAILABLE) continue;
@@ -85,29 +92,24 @@ public class TripService {
 
                         assignmentService.invalidateDriverCache();
 
-                        auditService.logAction(
-                                driver.getUser().getUsername(),
-                                "TRIP_ASSIGNED",
-                                "TripId=" + trip.getId()
-                        );
+                        log.info("Trip assigned with distributed lock | tripId={}", trip.getId());
 
-                        log.info("Trip {} assigned successfully", trip.getId());
                         return;
 
                     } finally {
-                        lock.unlock();
+                        lockManager.releaseLock(lockKey, owner);
                     }
                 }
 
             } catch (Exception e) {
-                log.warn("Retrying assignment for trip {}", trip.getId());
+                log.warn("Retrying distributed assignment...");
             }
         }
 
         trip.setStatus(TripStatus.CANCELLED);
         tripRepository.save(trip);
 
-        log.error("Trip {} failed after retries", trip.getId());
+        log.error("Trip failed (distributed locking)");
     }
 
     @PreAuthorize("hasRole('ADMIN') OR #driverId == authentication.principal.id")
