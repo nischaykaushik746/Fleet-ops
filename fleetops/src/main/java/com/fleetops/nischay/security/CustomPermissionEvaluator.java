@@ -11,17 +11,15 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
     @Override
     public boolean hasPermission(Authentication auth, Object target, Object permission) {
-
+        if (auth == null || permission == null) return false;
         String perm = permission.toString();
-
-        return auth.getAuthorities()
-                .stream()
+        return auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals(perm));
     }
 
     @Override
     public boolean hasPermission(Authentication auth, Serializable targetId,
                                  String targetType, Object permission) {
-        return false;
+        return hasPermission(auth, null, permission);
     }
 }

@@ -3,19 +3,36 @@ package com.fleetops.nischay.common;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
+import java.time.Instant;
 
 @MappedSuperclass
 @Getter
 @Setter
-public abstract class BaseEntity {
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity implements Serializable {
 
     @CreatedDate
-    private LocalDateTime createdAt;
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
 
     @LastModifiedDate
-    private LocalDateTime updatedAt;
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(updatable = false)
+    private String createdBy;
+
+    @LastModifiedBy
+    private String updatedBy;
+
+    @Version
+    private Long version;
 }
