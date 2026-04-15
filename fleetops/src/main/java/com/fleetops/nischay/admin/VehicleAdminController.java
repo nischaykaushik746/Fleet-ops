@@ -1,8 +1,12 @@
 package com.fleetops.nischay.admin;
 
-import com.fleetops.nischay.fleet.Vehicle;
+import com.fleetops.nischay.dto.request.RegisterVehicleRequest;
+import com.fleetops.nischay.dto.response.VehicleResponse;
 import com.fleetops.nischay.fleet.VehicleStatus;
+import com.fleetops.nischay.mapper.VehicleMapper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -11,17 +15,18 @@ import org.springframework.web.bind.annotation.*;
 public class VehicleAdminController {
 
     private final VehicleService vehicleService;
+    private final VehicleMapper vehicleMapper;
 
     @PostMapping
-    public Vehicle register(@RequestParam String number,
-                            @RequestParam String type,
-                            @RequestParam int capacity) {
-        return vehicleService.registerVehicle(number, type, capacity);
+    @ResponseStatus(HttpStatus.CREATED)
+    public VehicleResponse register(@Valid @RequestBody RegisterVehicleRequest request) {
+        return vehicleMapper.toResponse(
+                vehicleService.registerVehicle(request.getNumber(), request.getType(), request.getCapacity()));
     }
 
     @PutMapping("/{id}/status")
-    public Vehicle updateStatus(@PathVariable Long id,
-                                @RequestParam VehicleStatus status) {
-        return vehicleService.updateStatus(id, status);
+    public VehicleResponse updateStatus(@PathVariable Long id,
+                                        @RequestParam VehicleStatus status) {
+        return vehicleMapper.toResponse(vehicleService.updateStatus(id, status));
     }
 }

@@ -2,7 +2,8 @@ package com.fleetops.nischay.aop;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.*;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -13,26 +14,26 @@ public class ExecutionTrackingAspect {
     @Around("@annotation(com.fleetops.nischay.aop.TrackExecution)")
     public Object trackExecution(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        long start = System.currentTimeMillis();
-
         String methodName = joinPoint.getSignature().toShortString();
+        long start = System.nanoTime();
 
         try {
             Object result = joinPoint.proceed();
+            long durationMs = (System.nanoTime() - start) / 1_000_000;
 
-            long time = System.currentTimeMillis() - start;
-
-            if (time > 500) {
-                log.warn("⚠️ SLOW METHOD: {} took {} ms", methodName, time);
+            if (durationMs > 1000) {
+                log.warn("VERY SLOW: {} took {}ms", methodName, durationMs);
+            } else if (durationMs > 500) {
+                log.warn("SLOW: {} took {}ms", methodName, durationMs);
             } else {
-                log.info("✅ METHOD: {} executed in {} ms", methodName, time);
+                log.info("{} executed in {}ms", methodName, durationMs);
             }
 
             return result;
 
         } catch (Exception ex) {
-
-            log.error("❌ ERROR in method: {}", methodName, ex);
+            long durationMs = (System.nanoTime() - start) / 1_000_000;
+            log.error("{} failed after {}ms: {}", methodName, durationMs, ex.getMessage());
             throw ex;
         }
     }

@@ -11,46 +11,45 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DistributedLockManager {
 
     private final ConcurrentHashMap<String, DistributedLock> lockMap = new ConcurrentHashMap<>();
-
-    private static final long LEASE_TIME = 5000; // 5 sec
+    private static final long LEASE_TIME_MS = 5000;
 
     public String acquireLock(String key) {
-
         String ownerId = UUID.randomUUID().toString();
-        long expiry = System.currentTimeMillis() + LEASE_TIME;
+        long expiry = System.currentTimeMillis() + LEASE_TIME_MS;
 
         DistributedLock newLock = new DistributedLock(ownerId, expiry);
 
-        lockMap.compute(key, (k, existing) -> {
-
+        DistributedLock result = lockMap.compute(key, (k, existing) -> {
             if (existing == null || isExpired(existing)) {
                 return newLock;
             }
-
             return existing;
         });
 
-        DistributedLock current = lockMap.get(key);
-
-        if (current.getOwner().equals(ownerId)) {
-            log.info("Lock acquired | key={} owner={}", key, ownerId);
+        if (result.getOwner().equals(ownerId)) {
+            log.debug("Lock acquired | key={} owner={}", key, ownerId);
             return ownerId;
         }
 
+        log.debug("Lock contention | key={} existingOwner={}", key, result.getOwner());
         return null;
     }
 
-    public void releaseLock(String key, String ownerId) {
+    public boolean releaseLock(String key, String ownerId) {
+        boolean[] released = {false};
 
         lockMap.computeIfPresent(key, (k, existing) -> {
-
             if (existing.getOwner().equals(ownerId)) {
-                log.info("Lock released | key={}", key);
+                released[0] = true;
+                log.debug("Lock released | key={}", key);
                 return null;
             }
-
+            log.warn("Lock release rejected | key={} requestedBy={} ownedBy={}",
+                    key, ownerId, existing.getOwner());
             return existing;
         });
+
+        return released[0];
     }
 
     private boolean isExpired(DistributedLock lock) {

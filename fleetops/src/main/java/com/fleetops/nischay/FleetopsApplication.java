@@ -11,5 +11,4 @@ public class FleetopsApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(FleetopsApplication.class, args);
 	}
-
 }
